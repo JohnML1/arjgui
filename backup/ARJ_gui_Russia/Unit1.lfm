@@ -1,0 +1,226 @@
+object MainForm1: TMainForm1
+  Left = 454
+  Height = 501
+  Top = 162
+  Width = 641
+  VertScrollBar.Range = 19
+  ActiveControl = PageControl1
+  Caption = 'Arj Chapterarchiv'
+  ClientHeight = 501
+  ClientWidth = 641
+  OnActivate = FormLoaded
+  OnClose = FormClose
+  OnCreate = FormCreate
+  Position = poDefault
+  LCLVersion = '1.5'
+  object StatusBar1: TStatusBar
+    Left = 0
+    Height = 20
+    Top = 481
+    Width = 641
+    Panels = <>
+  end
+  object PageControl1: TPageControl
+    Left = 0
+    Height = 481
+    Top = 0
+    Width = 641
+    ActivePage = PageAuspacken
+    Align = alClient
+    TabIndex = 1
+    TabOrder = 1
+    OnChange = PageControl1Change
+    object PageEinpacken: TTabSheet
+      Caption = 'Einpacken'
+      ClientHeight = 455
+      ClientWidth = 633
+      object Panel1: TPanel
+        Left = 0
+        Height = 67
+        Top = 0
+        Width = 633
+        Align = alTop
+        ClientHeight = 67
+        ClientWidth = 633
+        TabOrder = 0
+        object Label2: TLabel
+          Left = 1
+          Height = 13
+          Top = 1
+          Width = 631
+          Align = alTop
+          Caption = 'Datei(en) hinzufügen:'
+          ParentColor = False
+        end
+        object cbDelphiFilter: TCheckBox
+          Left = 494
+          Height = 17
+          Top = 20
+          Width = 84
+          Caption = 'cbDelphiFilter'
+          OnClick = cbDelphiFilterClick
+          TabOrder = 1
+        end
+        object JvFileNameAddFile: TFileNameEdit
+          Left = 2
+          Height = 21
+          Top = 23
+          Width = 487
+          OnAcceptFileName = JvFileNameAddFileAcceptFileName
+          DialogOptions = [ofHideReadOnly, ofAllowMultiSelect, ofPathMustExist, ofFileMustExist, ofEnableSizing, ofViewDetail]
+          FilterIndex = 0
+          HideDirectories = False
+          ButtonWidth = 23
+          NumGlyphs = 1
+          MaxLength = 0
+          TabOrder = 0
+        end
+      end
+      object Panel2: TPanel
+        Left = 0
+        Height = 176
+        Top = 67
+        Width = 633
+        Align = alTop
+        ClientHeight = 176
+        ClientWidth = 633
+        TabOrder = 1
+        object Splitter1: TSplitter
+          Left = 348
+          Height = 161
+          Top = 14
+          Width = 5
+        end
+        object Label1: TLabel
+          Left = 1
+          Height = 13
+          Top = 1
+          Width = 631
+          Align = alTop
+          Caption = 'Datei/Dateifilter (für das Archiv):'
+          ParentColor = False
+        end
+        object Memo1: TMemo
+          Left = 1
+          Height = 161
+          Top = 14
+          Width = 347
+          Align = alLeft
+          ScrollBars = ssAutoBoth
+          TabOrder = 1
+        end
+        object MemoKommentar: TMemo
+          Left = 353
+          Height = 161
+          Top = 14
+          Width = 279
+          Align = alClient
+          Lines.Strings = (
+            'Noch kein Kommentar'
+          )
+          TabOrder = 2
+        end
+      end
+      object Panel3: TPanel
+        Left = 0
+        Height = 41
+        Top = 414
+        Width = 633
+        Align = alBottom
+        ClientHeight = 41
+        ClientWidth = 633
+        TabOrder = 2
+        object BtnPack: TBitBtn
+          Left = 24
+          Height = 25
+          Top = 8
+          Width = 105
+          Caption = 'BtnPack'
+          OnClick = BtnPackClick
+          TabOrder = 0
+        end
+      end
+    end
+    object PageAuspacken: TTabSheet
+      Caption = 'Auspacken'
+      ClientHeight = 455
+      ClientWidth = 633
+      ImageIndex = 1
+      object ListBoxArchivHead: TListBox
+        Left = 0
+        Height = 81
+        Top = 0
+        Width = 633
+        Align = alTop
+        ItemHeight = 0
+        OnDrawItem = ListBoxArchivHeadDrawItem
+        Style = lbOwnerDrawFixed
+        TabOrder = 0
+      end
+      object Panel4: TPanel
+        Left = 0
+        Height = 41
+        Top = 81
+        Width = 633
+        Align = alTop
+        ClientHeight = 41
+        ClientWidth = 633
+        TabOrder = 1
+        object JvFilenameEditArchiv: TFileNameEdit
+          Left = 4
+          Height = 21
+          Top = 5
+          Width = 621
+          OnAcceptFileName = JvFilenameEditArchivAcceptFileName
+          DialogOptions = [ofHideReadOnly, ofPathMustExist, ofFileMustExist, ofEnableSizing, ofViewDetail]
+          Filter = 'arj-Archive (*.arj)|*.arj;*.ARJ'
+          FilterIndex = 0
+          HideDirectories = False
+          ButtonWidth = 23
+          NumGlyphs = 1
+          MaxLength = 0
+          TabOrder = 0
+        end
+      end
+      object Panel5: TPanel
+        Left = 0
+        Height = 41
+        Top = 414
+        Width = 633
+        Align = alBottom
+        TabOrder = 2
+      end
+      object GridContent: TStringGrid
+        Left = 0
+        Height = 292
+        Top = 122
+        Width = 633
+        Align = alClient
+        FixedCols = 0
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goColMoving, goThumbTracking]
+        RowCount = 2
+        TabOrder = 3
+      end
+    end
+  end
+  object Process1: TProcess
+    Active = False
+    Options = []
+    Priority = ppNormal
+    StartupOptions = []
+    ShowWindow = swoNone
+    WindowColumns = 0
+    WindowHeight = 0
+    WindowLeft = 0
+    WindowRows = 0
+    WindowTop = 0
+    WindowWidth = 0
+    FillAttribute = 0
+    left = 40
+    top = 48
+  end
+  object UniqueInstance1: TUniqueInstance
+    left = 112
+    top = 48
+  end
+end
