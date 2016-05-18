@@ -112,6 +112,7 @@ type
     PopupArchiveHead: TPopupMenu;
     PopupProtokoll: TPopupMenu;
     PopupPackliste: TPopupMenu;
+    Process1: TProcess;
     Selected_clear: TMenuItem;
     PageControl1: TPageControl;
     Panel1: TPanel;
@@ -138,6 +139,7 @@ type
     procedure BtnShowLogClick(Sender: TObject);
     procedure cbDelphiFilterChange(Sender: TObject);
     procedure chChapterChange(Sender: TObject);
+    procedure ComboBoxExTractEditingDone(Sender: TObject);
     procedure CopySelectedClick(Sender: TObject);
     procedure DirectoryEdit1AcceptDirectory(Sender: TObject; var Value: string);
     procedure EditSearchEditingDone(Sender: TObject);
@@ -189,10 +191,13 @@ type
       Visibility: integer): integer;
 
 
+
+
     {$ENDIF }
 
     procedure PfadInKommentar;
     procedure SetDelphiFilter;
+
 
 
 
@@ -220,6 +225,7 @@ implementation
 { TForm1 }
 
 {$R *.lfm}
+
 
 function GetFileSize(const AFileName: string): Int64;
 var
@@ -350,6 +356,7 @@ procedure TForm1.FormDestroy(Sender: TObject);
 var
   x: integer;
 begin
+
   for x := 0 to ToDelete.Count - 1 do
   begin
     DeleteFile(PChar(ToDelete[x]));
@@ -445,13 +452,13 @@ begin
 
   if MemoHelp = 'MemoHelpRussia' then
   begin
-    MemoHelpRussia.Color := $008CF1F7;
-    MemoHelpUSA.Color := clDefault;
+    MemoHelpRussia.Font.Color := clRed;
+    MemoHelpUSA.Font.Color := clDefault;
   end
   else if MemoHelp = 'MemoHelpUSA' then
   begin
-    MemoHelpRussia.Color := clDefault;
-    MemoHelpUSA.Color := $008CF1F7;
+    MemoHelpRussia.Font.Color := clDefault;
+    MemoHelpUSA.Font.Color := clRed;
   end;
 
 end;
@@ -586,11 +593,13 @@ begin
   else
     jb := '';
 
-  (* offensichtlich kein escapen von *.* in bash notwendig *)
+  (*  *)
   Filter := trim(ComboBoxExTract.Text);
 
   (* Vorsichtsmassnahme *)
   if (Filter = '') then Filter := '*.*';
+
+  if ((Filter <> '*.*') and (Filter <> '\*.*') and (Filter <> '*') and (Filter <> '\*')) then  ShowMessage('Achtung: nur diese Dateien werden ausgepackt: ' + Filter);
 
   if not FileExists(FileNameEdit_ARJ_extract.FileName) then
   begin
@@ -598,6 +607,15 @@ begin
     FileNameEdit_ARJ_extract.SetFocus;
     ShowMessage('Das Archiv ''' + FileNameEdit_ARJ_extract.FileName +
       ''' existiert nicht, bitte ein existierendes Archiv auswählen!');
+    exit;
+  end;
+
+  if not DireCtoryExists(DirectoryEditDest.Directory) then
+  begin
+    DirectoryEditDest.SelectAll;
+    DirectoryEditDest.SetFocus;
+    ShowMessage('Das Verzeichnis ''' + DirectoryEditDest.Directory +
+      ''' existiert nicht, bitte ein existierendes Verzeichnis auswählen!');
     exit;
   end;
 
@@ -637,13 +655,15 @@ begin
     begin
       if Messagedlg('Soll der Dateimanager in ''' + DirectoryEditDest.Directory +
         ''' geöffnet werden?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
-        cmdline := '/usr/bin/nemo ' + DirectoryEditDest.Directory;
+        cmdline := '/usr/bin/nemo ' + DirectoryEditDest.Directory
+        else exit;
     end
     else if FileExists('/usr/bin/dolphin') then
     begin
       if Messagedlg('Soll der Dateimanager in ''' + DirectoryEditDest.Directory +
         ''' geöffnet werden?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
-        cmdline := '/usr/bin/dolphin ' + DirectoryEditDest.Directory;
+        cmdline := '/usr/bin/dolphin ' + DirectoryEditDest.Directory
+      else exit;
     end
     else
     begin
@@ -653,7 +673,19 @@ begin
     end;
 
     (* jetzt ausführen *)
-    fpsystem(cmdline);
+    Process1.CommandLine:=cmdline;
+    if (poWaitOnExit in Process1.Options) then
+    begin
+      Process1.Options := Process1.Options -[poWaitOnExit];
+      Process1.Execute;
+      Process1.Options := Process1.Options + [poWaitOnExit];
+    end
+    else
+      Process1.Execute;
+
+    if Process1.ExitStatus > 0 then
+     ShowMessage(cmdline + NL + 'konnte nicht erfolgreich ausgeführt werden: Errorcode ' + IntToStr(Process1.ExitStatus));
+    //fpsystem(cmdline);
 
 
 
@@ -1018,8 +1050,12 @@ begin
     list.Add('Packliste des Archivs:');
     list.AddStrings(Memo1.Lines);
     list.Add('');
-    list.Add('Kommentar zum Archiv:');
+    list.Add('Kommentar zum Archiv: ');
     list.AddStrings(MemoKommentar.Lines);
+
+    (* wegen der Umlauts *)
+    s := List.Text;
+    s := PWideChar(UTF8Decode(s));
 
     //list.SaveToFile(ExePath + 'aaa.txt');
 
@@ -1044,7 +1080,7 @@ begin
       begin
         cmdline :=
           '/usr/bin/icedove  -compose "to=''john-landmesser@hlb-online.de'',subject=''Arj-ChapterArchiv: ' + ArchName + ''',body='''
-          + list.Text + ''',attachment=''' + ArchName + '''"';
+          + s + ''',attachment=''' + ArchName + '''"';
 
         Eventlog1.Log('Mail wird verschickt mit dem Befehl: ' + cmdline);
 
@@ -1053,7 +1089,7 @@ begin
       begin
         cmdline :=
           '/usr/bin/thunderbird  -compose "to=''john-landmesser@hlb-online.de'',subject=''Arj-ChapterArchiv: '  + ArchName + ''',body='''
-          + list.Text + ''',attachment=''' + ArchName + '''"';
+          + s + ''',attachment=''' + ArchName + '''"';
 
         Eventlog1.Log('Mail wird verschickt mit dem Befehl: ' + cmdline);
       end
@@ -1061,7 +1097,7 @@ begin
       begin
         cmdline :=
           '/usr/bin/evolution mailto:jmlandmesser@gmail.com?subject=''Arj-ChapterArchiv: '  + ArchName + '''\&body='''
-          + list.Text + '''\&attach=' + ArchName;
+          + s + '''\&attach=' + ArchName;
 
         Eventlog1.Log('Mail wird verschickt mit dem Befehl: ' + cmdline);
 
@@ -1111,7 +1147,11 @@ begin
 
       (* LFN ersetzen: *)
       for x := 0 to list.Count -1 do
-      s := s + '%0D%0A' + List[x];
+      if x = 0 then
+        s := List[x]
+      else
+        s := s + '%0D%0A' + List[x];
+
 
       (* Spaces ersetzen: *)
       s := StringReplace(s,' ','%20',[rfReplaceAll, rfIgnoreCase]);
@@ -1121,7 +1161,7 @@ begin
          Der Trick ist wohl : PWideChar(UTF8Decode(
       *)
 
-      ret :=  shellexecute(Application.Mainform.handle, 'open',PWideChar(UTF8Decode('mailto:' + 'jmlandmesser@gmail.com' + '?subject=' + 'ARJ-ChapterArchiv: ' + ArchName + '&body=' + s)),nil, nil, sw_normal);
+      ret :=  shellexecute(Application.Mainform.handle, 'open',PWideChar(UTF8Decode('mailto:' + 'jmlandmesser@gmail.com' + '?subject=' + 'ARJ-ChapterArchiv: ' + ArchName  + '&body=' + s)),nil, nil, sw_normal);
       if ret < 32 then
       begin
          ShowMessage('Fehlercode: ' + IntToStr(ret) + NL + NL + 'Beim versenden des Mails ist ein Fehler aufgetreten. Evtl nützlich ist es das Protokoll zu lesen!' + NL + NL + 'Befehl war:' + NL + cmdLine);
@@ -1190,6 +1230,35 @@ begin
   EditChapter.Enabled := chChapter.Checked;
   if EditChapter.Enabled then
     EditChapter.SetFocus;
+end;
+
+procedure TForm1.ComboBoxExTractEditingDone(Sender: TObject);
+var s : string;
+begin
+  (* sicherstellen, dass *.* zu \*.* wird *)
+  {$IFDEF LINUX}
+
+    s := trim(ComboBoxExTract.Text);
+
+    (* nur diese zwei Fälle bearbeiten *)
+    if ((s = '*.*') or (s = '*')) then
+    begin
+
+      (* für die bash und ihr "expandieren" von *.* das Kriterium "escapen" *)
+      if s[1] <> '\' then
+      s := '\' + s;
+
+      (* falls noch nicht in Items vorhanden, hinzufügen und auswählen *)
+      if ComboBoxExTract.Items.IndexOf(s) = -1 then
+        ComboBoxExTract.itemindex := ComboBoxExTract.Items.Add(s)
+      else
+        (* vorhanden, also auswählen *)
+        ComboBoxExTract.itemindex := ComboBoxExTract.Items.IndexOf(s);
+
+    end;
+
+  {$ENDIF }
+
 end;
 
 procedure TForm1.CopySelectedClick(Sender: TObject);
@@ -1547,6 +1616,10 @@ begin
     ToDelete.Add(ExePath + 'chaptercomments.txt');
 
     worklist.LoadFromFile(ExePath + 'chaptercomments.txt');
+
+    (* wegen der Umlauts *)
+    worklist.Text:=PWideChar(UTF8Decode(worklist.Text));
+
     for x := 0 to worklist.Count - 1 do
     begin
       {* Ab hier nur noch Chapterkommentare *}

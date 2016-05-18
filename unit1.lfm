@@ -1,8 +1,8 @@
 object Form1: TForm1
-  Left = 438
+  Left = 435
   Height = 668
   Hint = '|Das ist das Hauptformular!!!'
-  Top = 107
+  Top = 85
   Width = 1039
   Caption = 'Arj ChapterArchiv'
   ClientHeight = 668
@@ -16,7 +16,7 @@ object Form1: TForm1
   Position = poScreenCenter
   SessionProperties = 'DirectoryEditDest.Directory;EditSearch.Text;FileNameEdit_ARJ.FileName;ListBoxDirHistory.Items;ComboBoxExTract.Items'
   ShowHint = True
-  LCLVersion = '1.5'
+  LCLVersion = '1.7'
   object StatusBar1: TStatusBar
     Left = 0
     Height = 20
@@ -246,7 +246,7 @@ object Form1: TForm1
           Align = alClient
           ItemHeight = 0
           PopupMenu = PopupProtokoll
-          ScrollWidth = 1023
+          ScrollWidth = 1027
           TabOrder = 0
         end
       end
@@ -272,7 +272,11 @@ object Form1: TForm1
         Top = 200
         Width = 1031
         Align = alClient
+        AlternateColor = clMoneyGreen
+        ColumnClickSorts = True
+        DragMode = dmAutomatic
         FixedCols = 0
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goSmoothScroll, goHeaderPushedLook]
         TabOrder = 0
       end
       object ListBoxArchivHead: TListBox
@@ -286,7 +290,7 @@ object Form1: TForm1
         OnDrawItem = ListBoxArchivHeadDrawItem
         ParentFont = False
         PopupMenu = PopupArchiveHead
-        ScrollWidth = 1029
+        ScrollWidth = 1031
         Style = lbOwnerDrawFixed
         TabOrder = 1
       end
@@ -404,6 +408,7 @@ object Form1: TForm1
           Items.Strings = (
             '*.*'
           )
+          OnEditingDone = ComboBoxExTractEditingDone
           TabOrder = 6
           Text = '*.*'
         end
@@ -433,13 +438,13 @@ object Form1: TForm1
     end
     object PageHelp: TTabSheet
       Caption = 'Hilfe'
-      ClientHeight = 612
+      ClientHeight = 622
       ClientWidth = 1031
       OnEnter = PageHelpEnter
       object Panel3: TPanel
         Left = 0
         Height = 50
-        Top = 562
+        Top = 572
         Width = 1031
         Align = alBottom
         ClientHeight = 50
@@ -1221,17 +1226,17 @@ object Form1: TForm1
       end
       object GroupBox6: TGroupBox
         Left = 0
-        Height = 290
+        Height = 300
         Top = 272
         Width = 1031
         Align = alClient
         Caption = 'Artj-USA'
-        ClientHeight = 272
+        ClientHeight = 282
         ClientWidth = 1027
         TabOrder = 2
         object MemoHelpUSA: TMemo
           Left = 0
-          Height = 272
+          Height = 282
           Top = 0
           Width = 1027
           Align = alClient
@@ -6727,5 +6732,21 @@ object Form1: TForm1
   object ApplicationProperties1: TApplicationProperties
     left = 232
     top = 56
+  end
+  object Process1: TProcess
+    Active = False
+    Options = [poWaitOnExit, poDefaultErrorMode]
+    Priority = ppNormal
+    StartupOptions = []
+    ShowWindow = swoNone
+    WindowColumns = 0
+    WindowHeight = 0
+    WindowLeft = 0
+    WindowRows = 0
+    WindowTop = 0
+    WindowWidth = 0
+    FillAttribute = 0
+    left = 40
+    top = 144
   end
 end
