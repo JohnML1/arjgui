@@ -56,7 +56,7 @@ uses
   Variants,
   comobj,
   {$ENDIF }
-  types, PropertyStorage, ComboEx, LazUTF8;
+  types, PropertyStorage, ComboEx, AsyncProcess, LazUTF8,  my_utils;
 
 type
   TSearchOption = (soIgnoreCase, soFromStart, soWrap);
@@ -67,6 +67,7 @@ type
 
   TForm1 = class(TForm)
     ApplicationProperties1: TApplicationProperties;
+    AsyncProcess1: TAsyncProcess;
     BtnPack: TButton;
     btnSearch: TButton;
     btnExtract: TButton;
@@ -206,7 +207,7 @@ type
 
 var
   Form1: TForm1;
-  MyArj, ArchName, ArchNameExtr, StartParam, cmdline, MemoHelp: string;
+  MyArj, ArchName, ArchNameExtr, StartParam, cmdline, MemoHelp, UserName: string;
   ToDelete, worklist, DelphiFilter, lst: TStringList;
   FSize : Int64;
   erg : integer;
@@ -349,6 +350,10 @@ begin
   end;
 
   PfadInKommentar;
+
+  (* wird beim einpacken abgefragt *)
+  UserName := SysUtils.GetEnvironmentVariable('USERNAME');
+
 
 end;
 
@@ -580,8 +585,15 @@ end;
 
 procedure TForm1.btnExtractClick(Sender: TObject);
 var
-  jb, Filter: string;
+  jb, Filter, DestDir, s: string;
 begin
+
+  DestDir := GridContent.Cells[GridContent.ColCount-1,GridContent.RowCount-1];
+
+  DestDir := ExtractFilePath(DestDir);
+
+
+
   if CheckSpaces(DirectoryEditDest.Directory) then
     exit;
 
@@ -628,12 +640,12 @@ begin
 
     Jei;
     (* Achtung BatchDatei nur verwenden wenn es Umleitungen mit > gibt!!! *)
-    cmdline := MyARJ + ' e -y -i ' + ' ' + jb + ' ' +
-      AnsiQuotedStr(FileNameEdit_ARJ_extract.FileName, '"') + ' ' + Filter +
-      ' -ht' + AnsiQuotedStr(DirectoryEditDest.Directory, '"');
+    cmdline := MyARJ + ' x -y -i ' + ' ' + jb + ' ' +
+      FileNameEdit_ARJ_extract.FileName + ' ' + Filter +
+      ' -ht' + DirectoryEditDest.Directory;
 
     (* Logfile schreiben *)
-    Eventlog1.Log('auspacken ohne Pfad nach: ' + cmdline);
+    Eventlog1.Log('auspacken mit Pfad nach: ' + cmdline);
 
       (* geht so nicht!!
       ExecuteProcess('/usr/bin/arj',''' e -y -i ' + ' ' + jb + ' ' + AnsiQuotedStr(FileNameEdit_ARJ_extract.FileName,'"') + ' * ' + '-ht' + AnsiQuotedStr(DirectoryEditDest.Directory,'"')+'''');
@@ -668,7 +680,8 @@ begin
     else
     begin
       ShowMessage('Kein Dateimanager gefunden um ''' +
-        DirectoryEditDest.Directory + ''' anzuzeigen!');
+        DirectoryEditDest.Directory + ''' anzuzeigen, wir probierens mal mit OpenURL!');
+      OpenURL(DirectoryEditDest.Directory);
       exit;
     end;
 
@@ -701,13 +714,16 @@ begin
 
   try
     Jei;
+    (*
+    ForceDirectory(IncludeTrailingBackslash(s))
+    *)
     (* Achtung BatchDatei nur verwenden wenn es Umleitungen mit > gibt!!! *)
-    cmdline := Myarj + ' e -y -i ' + ' ' + jb + ' ' +
-      AnsiQuotedStr(FileNameEdit_ARJ_extract.FileName, '"') + ' ' + Filter +
-      ' -ht' + AnsiQuotedStr(DirectoryEditDest.Directory, '"');
+    cmdline := Myarj + ' x -y -i ' + ' ' + jb + ' ' +
+      FileNameEdit_ARJ_extract.FileName + ' ' + Filter +
+      ' -ht' + DirectoryEditDest.Directory;
 
     (* Logfile schreiben *)
-    Eventlog1.Log('auspacken ohne Pfad nach: ' + cmdline);
+    Eventlog1.Log('auspacken mit Pfad nach: ' + cmdline);
 
       (* zu dem Parameter show siehe
       https://msdn.microsoft.com/en-us/library/windows/desktop/bb762153%28v=vs.85%29.aspx
@@ -720,12 +736,15 @@ begin
     erg :=  WinExecAndWait32(cmdline, ExePath, 2);
     Eventlog1.Log('Ausführung von arjrun.bat hatte den ExitCode = ' + IntToStr(erg));
 
+    (* Zielverzeichnis zusammenstellen *)
+    s := Copy(DirectoryEditDest.Text,0,3);
+    s :=  s + DestDir;
 
     (* Im Explorer anzeigen? *)
-    if Messagedlg('Soll der Dateimanager in ''' + DirectoryEditDest.Directory +
+    if Messagedlg('Soll der Dateimanager in ''' + s +
       ''' geöffnet werden?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
     ShellExeCute(Application.Mainform.handle, nil, PChar('Explorer.exe'),
-      PChar('/n,/e,' + DirectoryEditDest.Directory + ',/select,' + DirectoryEditDest.Directory), PChar(DirectoryEditDest.Directory), SW_Normal);
+      PChar('/n,/e,/select,' + s), PChar(s), SW_Normal);
 
 
 
@@ -737,6 +756,10 @@ begin
   end;
 
    {$ENDIF }
+
+   s := Copy( DirectoryEditDest.Text,0,3);
+   //ShowMessage( s + IncludeTrailingBackslash(DestDir) + ExtractFileName(ParamStr(1)));
+   CopyFile(PChar(ArchName),PChar(s + IncludeTrailingBackslash(DestDir) + ExtractFileName(ParamStr(1))),true);
 
 end;
 
@@ -863,6 +886,7 @@ procedure TForm1.BtnPackClick(Sender: TObject);
 var
   jz, packlst, comment: string;
   lst: TStringList;
+  size : int64;
 begin
   if not FileExists(MyARJ) then
   begin
@@ -1024,6 +1048,8 @@ begin
     ShowContent(Sender);
     (* ********************************** *)
 
+    size := GetFileSize(ArchName);
+    StatusBar1.SimpleText:= ExtractFileName(ArchName) +': ' + FileSizeToStr(size);
 
   finally
     lst.Free;
@@ -1037,7 +1063,7 @@ procedure TForm1.btnSendClick(Sender: TObject);
 var
   list: TStringList;
   x, ret: integer;
-  s : string;
+  s, n : string;
 begin
   try
     list := TStringList.Create;
@@ -1160,17 +1186,33 @@ begin
       (* geht, MIT Umlauts aber ohne attachement
          Der Trick ist wohl : PWideChar(UTF8Decode(
       *)
-
-      ret :=  shellexecute(Application.Mainform.handle, 'open',PWideChar(UTF8Decode('mailto:' + 'jmlandmesser@gmail.com' + '?subject=' + 'ARJ-ChapterArchiv: ' + ArchName  + '&body=' + s)),nil, nil, sw_normal);
-      if ret < 32 then
+      if UserName = 'JLandmesser' then
       begin
-         ShowMessage('Fehlercode: ' + IntToStr(ret) + NL + NL + 'Beim versenden des Mails ist ein Fehler aufgetreten. Evtl nützlich ist es das Protokoll zu lesen!' + NL + NL + 'Befehl war:' + NL + cmdLine);
-         Eventlog1.Log(ArchName + ' konnte NICHT per Outlook verschickt werden. Fehlercode von ShellExecute war: ' + IntToStr(ret));
-         exit;
+        ret :=  shellexecute(Application.Mainform.handle, 'open',PWideChar(UTF8Decode('mailto:' + 'jmlandmesser@gmail.com' + '?subject=' + 'ARJ-ChapterArchiv: ' + ArchName  + '&body=' + s)),nil, nil, sw_normal);
+        if ret < 32 then
+        begin
+           ShowMessage('Fehlercode: ' + IntToStr(ret) + NL + NL + 'Beim versenden des Mails ist ein Fehler aufgetreten. Evtl nützlich ist es das Protokoll zu lesen!' + NL + NL + 'Befehl war:' + NL + cmdLine);
+           Eventlog1.Log(ArchName + ' konnte NICHT per Outlook verschickt werden. Fehlercode von ShellExecute war: ' + IntToStr(ret));
+           exit;
+        end;
+
+
+        Eventlog1.Log(ArchName + ' wird per Outlook verschickt.');
+      end
+      else
+      begin
+        // ShowMessage('Windows, aber Thnderbird nutzen');
+         cmdline :=
+           '"C:\Program Files (x86)\Mozilla Thunderbird\thunderbird.exe" ' + PWideChar(UTF8Decode(' -compose "to=''john-landmesser@hlb-online.de'',subject=''Arj-ChapterArchiv: '  + ArchName + ''',body='''
+           + list.Text + ''',attachment=''' + ArchName + '''"'));
+
+         try
+           AsyncProcess1.CommandLine:=cmdline;
+           AsyncProcess1.Execute;
+           Eventlog1.Log('Mail wird verschickt mit dem Befehl: ' + cmdline);
+         finally
+         end;
       end;
-
-
-      Eventlog1.Log(ArchName + ' wird per Outlook verschickt.');
 
 
     finally
